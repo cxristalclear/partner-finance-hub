@@ -35,9 +35,6 @@ serve(async (req) => {
       });
     }
 
-    const userId = user.id;
-    const { public_token, institution } = await req.json();
-
     const PLAID_CLIENT_ID = Deno.env.get("PLAID_CLIENT_ID");
     const PLAID_SECRET = Deno.env.get("PLAID_SECRET");
     const PLAID_ENV = Deno.env.get("PLAID_ENV") || "sandbox";
@@ -45,76 +42,38 @@ serve(async (req) => {
     if (!PLAID_CLIENT_ID || !PLAID_SECRET) {
       return new Response(
         JSON.stringify({ error: "Plaid credentials not configured" }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     const baseUrl = `https://${PLAID_ENV}.plaid.com`;
 
-    // Exchange public token for access token
-    const exchangeRes = await fetch(`${baseUrl}/item/public_token/exchange`, {
+    const linkRes = await fetch(`${baseUrl}/link/token/create`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         client_id: PLAID_CLIENT_ID,
         secret: PLAID_SECRET,
-        public_token,
+        user: { client_user_id: user.id },
+        client_name: "Vault Finance",
+        products: ["transactions"],
+        country_codes: ["US"],
+        language: "en",
       }),
     });
 
-    const exchangeData = await exchangeRes.json();
+    const linkData = await linkRes.json();
 
-    if (exchangeData.error_code) {
-      return new Response(JSON.stringify({ error: exchangeData.error_message }), {
+    if (linkData.error_code) {
+      return new Response(JSON.stringify({ error: linkData.error_message }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Get user's household
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("household_id")
-      .eq("user_id", userId)
-      .single();
-
-    if (!profile?.household_id) {
-      return new Response(JSON.stringify({ error: "No household found" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Store bank connection
-    const { data: connection, error: insertError } = await supabase
-      .from("bank_connections")
-      .insert({
-        household_id: profile.household_id,
-        user_id: userId,
-        institution_name: institution?.name || "Unknown",
-        institution_id: institution?.institution_id || null,
-        item_id: exchangeData.item_id,
-        access_token: exchangeData.access_token,
-      })
-      .select()
-      .single();
-
-    if (insertError) {
-      return new Response(JSON.stringify({ error: insertError.message }), {
-        status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     return new Response(
-      JSON.stringify({ success: true, connection_id: connection.id }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      JSON.stringify({ link_token: linkData.link_token }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), {
