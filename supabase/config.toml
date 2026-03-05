@@ -1,0 +1,7 @@
+project_id = "ggymvigdrgnwanzhwllr"
+
+[functions.plaid-exchange]
+verify_jwt = false
+
+[functions.fetch-balances]
+verify_jwt = false
