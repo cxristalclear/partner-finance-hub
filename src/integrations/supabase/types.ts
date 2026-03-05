@@ -14,13 +14,162 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      account_balances: {
+        Row: {
+          account_id: string
+          available_balance: number | null
+          bank_connection_id: string
+          currency: string
+          current_balance: number
+          id: string
+          last_synced_at: string
+          name: string
+          subtype: string | null
+          type: string
+        }
+        Insert: {
+          account_id: string
+          available_balance?: number | null
+          bank_connection_id: string
+          currency?: string
+          current_balance?: number
+          id?: string
+          last_synced_at?: string
+          name: string
+          subtype?: string | null
+          type: string
+        }
+        Update: {
+          account_id?: string
+          available_balance?: number | null
+          bank_connection_id?: string
+          currency?: string
+          current_balance?: number
+          id?: string
+          last_synced_at?: string
+          name?: string
+          subtype?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_balances_bank_connection_id_fkey"
+            columns: ["bank_connection_id"]
+            isOneToOne: false
+            referencedRelation: "bank_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_connections: {
+        Row: {
+          access_token: string
+          created_at: string
+          cursor: string | null
+          household_id: string
+          id: string
+          institution_id: string | null
+          institution_name: string
+          item_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          cursor?: string | null
+          household_id: string
+          id?: string
+          institution_id?: string | null
+          institution_name: string
+          item_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          cursor?: string | null
+          household_id?: string
+          id?: string
+          institution_id?: string | null
+          institution_name?: string
+          item_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_connections_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      households: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          household_id: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          household_id?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          household_id?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      user_household_id: { Args: { _user_id: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
