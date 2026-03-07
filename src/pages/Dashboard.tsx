@@ -3,6 +3,7 @@ import { DashboardNav } from '@/components/dashboard/DashboardNav';
 import { NetWorthCard } from '@/components/dashboard/NetWorthCard';
 import { BankAccountCard } from '@/components/dashboard/BankAccountCard';
 import { ConnectBankButton } from '@/components/dashboard/ConnectBankButton';
+import { InvitePartnerDialog } from '@/components/dashboard/InvitePartnerDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
@@ -62,7 +63,10 @@ export default function Dashboard() {
           <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
             Linked Accounts
           </h3>
-          <ConnectBankButton onSuccess={fetchBalances} />
+          <div className="flex items-center gap-2">
+            <InvitePartnerDialog />
+            <ConnectBankButton onSuccess={fetchBalances} />
+          </div>
         </motion.div>
 
         {loading ? (
