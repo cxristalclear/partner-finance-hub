@@ -1,20 +1,31 @@
-import { Landmark, Wallet } from 'lucide-react';
+import { useState } from 'react';
+import { Landmark, Wallet, Settings2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
 
 interface Account {
+  id?: string;
   name: string;
   type: string;
   balance: number;
+  isHidden?: boolean;
 }
 
 interface BankAccountCardProps {
   institution: string;
   accounts: Account[];
   index: number;
+  onToggleAccount?: (accountId: string, hidden: boolean) => void;
 }
 
-export function BankAccountCard({ institution, accounts, index }: BankAccountCardProps) {
-  const total = accounts.reduce((sum, a) => sum + a.balance, 0);
+export function BankAccountCard({ institution, accounts, index, onToggleAccount }: BankAccountCardProps) {
+  const [editing, setEditing] = useState(false);
+
+  const visibleAccounts = editing ? accounts : accounts.filter((a) => !a.isHidden);
+  const total = visibleAccounts
+    .filter((a) => !a.isHidden)
+    .reduce((sum, a) => sum + a.balance, 0);
 
   return (
     <motion.div
@@ -30,26 +41,51 @@ export function BankAccountCard({ institution, accounts, index }: BankAccountCar
           </div>
           <h3 className="font-semibold text-sm">{institution}</h3>
         </div>
-        <span className="text-sm font-mono font-medium">
-          ${total.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-mono font-medium">
+            ${total.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          </span>
+          {onToggleAccount && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+              onClick={() => setEditing(!editing)}
+            >
+              <Settings2 className="w-3.5 h-3.5" />
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="space-y-3">
-        {accounts.map((account, i) => (
-          <div key={i} className="flex items-center justify-between text-sm">
+        {visibleAccounts.map((account, i) => (
+          <div key={account.id || i} className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Wallet className="w-3.5 h-3.5" />
-              <span>{account.name}</span>
+              {editing && account.id && onToggleAccount ? (
+                <Switch
+                  checked={!account.isHidden}
+                  onCheckedChange={(checked) => onToggleAccount(account.id!, !checked)}
+                  className="scale-75 origin-left"
+                />
+              ) : (
+                <Wallet className="w-3.5 h-3.5" />
+              )}
+              <span className={account.isHidden ? 'line-through opacity-50' : ''}>{account.name}</span>
               <span className="text-xs px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground">
                 {account.type}
               </span>
             </div>
-            <span className="font-mono">
+            <span className={`font-mono ${account.isHidden ? 'line-through opacity-50' : ''}`}>
               ${account.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </span>
           </div>
         ))}
+        {!editing && accounts.some((a) => a.isHidden) && (
+          <p className="text-xs text-muted-foreground italic">
+            {accounts.filter((a) => a.isHidden).length} account(s) hidden
+          </p>
+        )}
       </div>
     </motion.div>
   );
