@@ -22,6 +22,7 @@ export type Database = {
           currency: string
           current_balance: number
           id: string
+          is_hidden: boolean
           last_synced_at: string
           name: string
           subtype: string | null
@@ -34,6 +35,7 @@ export type Database = {
           currency?: string
           current_balance?: number
           id?: string
+          is_hidden?: boolean
           last_synced_at?: string
           name: string
           subtype?: string | null
@@ -46,6 +48,7 @@ export type Database = {
           currency?: string
           current_balance?: number
           id?: string
+          is_hidden?: boolean
           last_synced_at?: string
           name?: string
           subtype?: string | null
@@ -174,6 +177,7 @@ export type Database = {
           household_id: string
           id: string
           institution_name: string
+          is_hidden: boolean
           notes: string | null
           updated_at: string
         }
@@ -186,6 +190,7 @@ export type Database = {
           household_id: string
           id?: string
           institution_name: string
+          is_hidden?: boolean
           notes?: string | null
           updated_at?: string
         }
@@ -198,6 +203,7 @@ export type Database = {
           household_id?: string
           id?: string
           institution_name?: string
+          is_hidden?: boolean
           notes?: string | null
           updated_at?: string
         }
