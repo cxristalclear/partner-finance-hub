@@ -4,6 +4,7 @@ import { NetWorthCard } from '@/components/dashboard/NetWorthCard';
 import { BankAccountCard } from '@/components/dashboard/BankAccountCard';
 import { ConnectBankButton } from '@/components/dashboard/ConnectBankButton';
 import { InvitePartnerDialog } from '@/components/dashboard/InvitePartnerDialog';
+import { AddManualAccountDialog } from '@/components/dashboard/AddManualAccountDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,18 +21,38 @@ interface InstitutionData {
   accounts: AccountData[];
 }
 
+interface ManualAccount {
+  id: string;
+  institution_name: string;
+  account_name: string;
+  account_type: string;
+  balance: number;
+}
+
 export default function Dashboard() {
   const [institutions, setInstitutions] = useState<InstitutionData[]>([]);
+  const [manualAccounts, setManualAccounts] = useState<ManualAccount[]>([]);
   const [totalBalance, setTotalBalance] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const fetchBalances = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('fetch-balances');
-      if (error) throw error;
-      setInstitutions(data?.institutions || []);
-      setTotalBalance(data?.total_balance || 0);
+      const [plaidRes, manualRes] = await Promise.all([
+        supabase.functions.invoke('fetch-balances'),
+        supabase.from('manual_accounts' as any).select('*'),
+      ]);
+
+      const plaidInstitutions = plaidRes.data?.institutions || [];
+      const plaidTotal = plaidRes.data?.total_balance || 0;
+
+      const manual = (manualRes.data || []) as unknown as ManualAccount[];
+      setManualAccounts(manual);
+
+      const manualTotal = manual.reduce((sum, a) => sum + Number(a.balance), 0);
+
+      setInstitutions(plaidInstitutions);
+      setTotalBalance(plaidTotal + manualTotal);
     } catch (err) {
       console.error('Failed to fetch balances:', err);
     } finally {
@@ -42,6 +63,14 @@ export default function Dashboard() {
   useEffect(() => {
     fetchBalances();
   }, []);
+
+  // Group manual accounts by institution
+  const manualByInstitution = manualAccounts.reduce<Record<string, ManualAccount[]>>((acc, a) => {
+    (acc[a.institution_name] ||= []).push(a);
+    return acc;
+  }, {});
+
+  const hasAnyAccounts = institutions.length > 0 || manualAccounts.length > 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -65,6 +94,7 @@ export default function Dashboard() {
           </h3>
           <div className="flex items-center gap-2">
             <InvitePartnerDialog />
+            <AddManualAccountDialog onSuccess={fetchBalances} />
             <ConnectBankButton onSuccess={fetchBalances} />
           </div>
         </motion.div>
@@ -75,9 +105,9 @@ export default function Dashboard() {
               <Skeleton key={i} className="h-28 w-full rounded-xl" />
             ))}
           </div>
-        ) : institutions.length === 0 ? (
+        ) : !hasAnyAccounts ? (
           <p className="text-center text-sm text-muted-foreground py-12">
-            No linked accounts yet. Connect a bank to get started.
+            No accounts yet. Connect a bank or add one manually.
           </p>
         ) : (
           <div className="grid gap-4">
@@ -93,10 +123,23 @@ export default function Dashboard() {
                 index={i}
               />
             ))}
+
+            {Object.entries(manualByInstitution).map(([instName, accounts], i) => (
+              <BankAccountCard
+                key={`manual-${instName}`}
+                institution={`${instName} (manual)`}
+                accounts={accounts.map((a) => ({
+                  name: a.account_name,
+                  type: a.account_type,
+                  balance: Number(a.balance),
+                }))}
+                index={institutions.length + i}
+              />
+            ))}
           </div>
         )}
 
-        {!loading && institutions.length > 0 && (
+        {!loading && hasAnyAccounts && (
           <p className="text-center text-xs text-muted-foreground pt-4">
             Data refreshed from Plaid · Last sync: just now
           </p>
