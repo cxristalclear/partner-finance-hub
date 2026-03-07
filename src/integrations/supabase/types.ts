@@ -164,6 +164,53 @@ export type Database = {
         }
         Relationships: []
       }
+      manual_accounts: {
+        Row: {
+          account_name: string
+          account_type: string
+          balance: number
+          created_at: string
+          created_by: string
+          household_id: string
+          id: string
+          institution_name: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_name: string
+          account_type?: string
+          balance?: number
+          created_at?: string
+          created_by: string
+          household_id: string
+          id?: string
+          institution_name: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_name?: string
+          account_type?: string
+          balance?: number
+          created_at?: string
+          created_by?: string
+          household_id?: string
+          id?: string
+          institution_name?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_accounts_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
