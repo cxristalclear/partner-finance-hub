@@ -8,16 +8,20 @@ import { AddManualAccountDialog } from '@/components/dashboard/AddManualAccountD
 import { Skeleton } from '@/components/ui/skeleton';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface AccountData {
+  account_id: string;
   name: string;
   type: string;
   subtype?: string;
   current_balance: number;
+  is_hidden?: boolean;
 }
 
 interface InstitutionData {
   institution: string;
+  connection_id: string;
   accounts: AccountData[];
 }
 
@@ -27,6 +31,7 @@ interface ManualAccount {
   account_name: string;
   account_type: string;
   balance: number;
+  is_hidden?: boolean;
 }
 
 export default function Dashboard() {
@@ -35,24 +40,42 @@ export default function Dashboard() {
   const [totalBalance, setTotalBalance] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  const computeTotal = (insts: InstitutionData[], manual: ManualAccount[]) => {
+    const plaidTotal = insts.reduce(
+      (sum, inst) =>
+        sum + inst.accounts.filter((a) => !a.is_hidden).reduce((s, a) => s + a.current_balance, 0),
+      0
+    );
+    const manualTotal = manual
+      .filter((a) => !a.is_hidden)
+      .reduce((sum, a) => sum + Number(a.balance), 0);
+    return plaidTotal + manualTotal;
+  };
+
   const fetchBalances = async () => {
     setLoading(true);
     try {
-      const [plaidRes, manualRes] = await Promise.all([
+      const [plaidRes, manualRes, hiddenRes] = await Promise.all([
         supabase.functions.invoke('fetch-balances'),
         supabase.from('manual_accounts' as any).select('*'),
+        supabase.from('account_balances' as any).select('account_id, is_hidden').eq('is_hidden', true),
       ]);
 
-      const plaidInstitutions = plaidRes.data?.institutions || [];
-      const plaidTotal = plaidRes.data?.total_balance || 0;
+      const plaidInstitutions: InstitutionData[] = plaidRes.data?.institutions || [];
+      const hiddenIds = new Set(((hiddenRes.data || []) as any[]).map((r: any) => r.account_id));
+
+      // Mark hidden accounts
+      for (const inst of plaidInstitutions) {
+        for (const acct of inst.accounts) {
+          acct.is_hidden = hiddenIds.has(acct.account_id);
+        }
+      }
 
       const manual = (manualRes.data || []) as unknown as ManualAccount[];
-      setManualAccounts(manual);
-
-      const manualTotal = manual.reduce((sum, a) => sum + Number(a.balance), 0);
 
       setInstitutions(plaidInstitutions);
-      setTotalBalance(plaidTotal + manualTotal);
+      setManualAccounts(manual);
+      setTotalBalance(computeTotal(plaidInstitutions, manual));
     } catch (err) {
       console.error('Failed to fetch balances:', err);
     } finally {
@@ -63,6 +86,45 @@ export default function Dashboard() {
   useEffect(() => {
     fetchBalances();
   }, []);
+
+  const handleTogglePlaidAccount = async (accountId: string, hidden: boolean) => {
+    try {
+      const { error } = await (supabase.from('account_balances' as any) as any)
+        .update({ is_hidden: hidden })
+        .eq('account_id', accountId);
+      if (error) throw error;
+
+      setInstitutions((prev) => {
+        const updated = prev.map((inst) => ({
+          ...inst,
+          accounts: inst.accounts.map((a) =>
+            a.account_id === accountId ? { ...a, is_hidden: hidden } : a
+          ),
+        }));
+        setTotalBalance(computeTotal(updated, manualAccounts));
+        return updated;
+      });
+    } catch {
+      toast.error('Failed to update account visibility');
+    }
+  };
+
+  const handleToggleManualAccount = async (accountId: string, hidden: boolean) => {
+    try {
+      const { error } = await (supabase.from('manual_accounts' as any) as any)
+        .update({ is_hidden: hidden })
+        .eq('id', accountId);
+      if (error) throw error;
+
+      setManualAccounts((prev) => {
+        const updated = prev.map((a) => (a.id === accountId ? { ...a, is_hidden: hidden } : a));
+        setTotalBalance(computeTotal(institutions, updated));
+        return updated;
+      });
+    } catch {
+      toast.error('Failed to update account visibility');
+    }
+  };
 
   // Group manual accounts by institution
   const manualByInstitution = manualAccounts.reduce<Record<string, ManualAccount[]>>((acc, a) => {
@@ -116,11 +178,14 @@ export default function Dashboard() {
                 key={inst.institution}
                 institution={inst.institution}
                 accounts={inst.accounts.map((a) => ({
+                  id: a.account_id,
                   name: a.name,
                   type: a.subtype || a.type,
                   balance: a.current_balance,
+                  isHidden: a.is_hidden,
                 }))}
                 index={i}
+                onToggleAccount={handleTogglePlaidAccount}
               />
             ))}
 
@@ -129,11 +194,14 @@ export default function Dashboard() {
                 key={`manual-${instName}`}
                 institution={`${instName} (manual)`}
                 accounts={accounts.map((a) => ({
+                  id: a.id,
                   name: a.account_name,
                   type: a.account_type,
                   balance: Number(a.balance),
+                  isHidden: a.is_hidden,
                 }))}
                 index={institutions.length + i}
+                onToggleAccount={handleToggleManualAccount}
               />
             ))}
           </div>
