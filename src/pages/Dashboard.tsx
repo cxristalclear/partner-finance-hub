@@ -3,6 +3,7 @@ import { DashboardNav } from '@/components/dashboard/DashboardNav';
 import { NetWorthCard } from '@/components/dashboard/NetWorthCard';
 import { BankAccountCard } from '@/components/dashboard/BankAccountCard';
 import { ConnectBankButton } from '@/components/dashboard/ConnectBankButton';
+import { InvitePartnerDialog } from '@/components/dashboard/InvitePartnerDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
