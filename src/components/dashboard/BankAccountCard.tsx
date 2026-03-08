@@ -64,11 +64,23 @@ export function BankAccountCard({ institution, accounts, index, onToggleAccount,
           <div key={account.id || i} className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2 text-muted-foreground">
               {editing && account.id && onToggleAccount ? (
-                <Switch
-                  checked={!account.isHidden}
-                  onCheckedChange={(checked) => onToggleAccount(account.id!, !checked)}
-                  className="scale-75 origin-left"
-                />
+                <div className="flex items-center gap-1">
+                  <Switch
+                    checked={!account.isHidden}
+                    onCheckedChange={(checked) => onToggleAccount(account.id!, !checked)}
+                    className="scale-75 origin-left"
+                  />
+                  {onDeleteAccount && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-destructive hover:text-destructive/80"
+                      onClick={() => onDeleteAccount(account.id!)}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  )}
+                </div>
               ) : (
                 <Wallet className="w-3.5 h-3.5" />
               )}
