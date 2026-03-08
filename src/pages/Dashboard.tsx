@@ -3,7 +3,6 @@ import { DashboardNav } from '@/components/dashboard/DashboardNav';
 import { NetWorthCard } from '@/components/dashboard/NetWorthCard';
 import { BankAccountCard } from '@/components/dashboard/BankAccountCard';
 import { ConnectBankButton } from '@/components/dashboard/ConnectBankButton';
-import { InvitePartnerDialog } from '@/components/dashboard/InvitePartnerDialog';
 import { AddManualAccountDialog } from '@/components/dashboard/AddManualAccountDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { motion } from 'framer-motion';
@@ -267,7 +266,6 @@ export default function Dashboard() {
 
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="flex items-center justify-end">
           <div className="flex items-center gap-2">
-            <InvitePartnerDialog />
             <AddManualAccountDialog onSuccess={fetchBalances} />
             <ConnectBankButton onSuccess={fetchBalances} />
           </div>

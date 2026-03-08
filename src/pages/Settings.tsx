@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { DashboardNav } from '@/components/dashboard/DashboardNav';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { InvitePartnerDialog } from '@/components/dashboard/InvitePartnerDialog';
 import { ArrowLeft, Landmark, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -142,6 +143,11 @@ export default function Settings() {
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <h1 className="text-xl font-semibold">Account Settings</h1>
+        </div>
+
+        <div className="glass-card p-5">
+          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Household</h3>
+          <InvitePartnerDialog />
         </div>
 
         <p className="text-sm text-muted-foreground">
