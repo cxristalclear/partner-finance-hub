@@ -168,7 +168,7 @@ export default function Dashboard() {
 
   const handleToggleManualAccount = async (accountId: string, hidden: boolean) => {
     try {
-      const { error } = await (supabase.from('manual_accounts' as any) as any)
+      const { error } = await supabase.from('manual_accounts')
         .update({ is_hidden: hidden }).eq('id', accountId);
       if (error) throw error;
       setManualAccounts((prev) => {
