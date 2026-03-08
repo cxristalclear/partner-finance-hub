@@ -2,11 +2,13 @@ import { TrendingUp, TrendingDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface NetWorthCardProps {
-  totalBalance: number;
+  totalAssets: number;
+  totalDebts: number;
   changePercent?: number;
 }
 
-export function NetWorthCard({ totalBalance, changePercent = 0 }: NetWorthCardProps) {
+export function NetWorthCard({ totalAssets, totalDebts, changePercent = 0 }: NetWorthCardProps) {
+  const netWorth = totalAssets - totalDebts;
   const isPositive = changePercent >= 0;
 
   return (
@@ -19,9 +21,9 @@ export function NetWorthCard({ totalBalance, changePercent = 0 }: NetWorthCardPr
       <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider mb-1">
         Combined Net Worth
       </p>
-      <div className="flex items-end gap-3 mb-2">
+      <div className="flex items-end gap-3 mb-3">
         <h2 className="text-3xl md:text-5xl font-bold tracking-tight font-mono">
-          ${totalBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          ${netWorth.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </h2>
         {changePercent !== 0 && (
           <span className={`inline-flex items-center gap-1 text-sm font-medium pb-1 ${isPositive ? 'text-success' : 'text-destructive'}`}>
@@ -30,7 +32,20 @@ export function NetWorthCard({ totalBalance, changePercent = 0 }: NetWorthCardPr
           </span>
         )}
       </div>
-      <p className="text-xs text-muted-foreground">Across all linked accounts</p>
+      <div className="flex items-center gap-4 text-sm">
+        <span className="text-muted-foreground">
+          Assets{' '}
+          <span className="font-mono font-medium text-foreground">
+            ${totalAssets.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          </span>
+        </span>
+        <span className="text-muted-foreground">
+          Debts{' '}
+          <span className="font-mono font-medium text-destructive">
+            ${totalDebts.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          </span>
+        </span>
+      </div>
     </motion.div>
   );
 }
