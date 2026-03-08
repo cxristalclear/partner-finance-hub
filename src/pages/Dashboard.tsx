@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DashboardNav } from '@/components/dashboard/DashboardNav';
 import { NetWorthCard } from '@/components/dashboard/NetWorthCard';
 import { BankAccountCard } from '@/components/dashboard/BankAccountCard';
@@ -8,6 +9,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Sparkles } from 'lucide-react';
+import { defaultPlaidCategory, defaultManualCategory, type Category } from '@/lib/categories';
 
 interface AccountData {
   account_id: string;
@@ -17,6 +20,7 @@ interface AccountData {
   current_balance: number;
   is_hidden?: boolean;
   category?: string;
+  institution?: string;
 }
 
 interface InstitutionData {
@@ -35,48 +39,40 @@ interface ManualAccount {
   category?: string;
 }
 
-const DEBT_TYPES = new Set(['credit', 'loan', 'mortgage']);
-const DEBT_SUBTYPES = new Set(['credit card', 'student', 'auto', 'mortgage', 'personal', 'home equity']);
-
-function defaultCategory(type: string, subtype?: string): string {
-  const t = type.toLowerCase();
-  const s = (subtype || '').toLowerCase();
-  if (DEBT_TYPES.has(t) || DEBT_SUBTYPES.has(s)) return 'debt';
-  if (t === 'investment' || ['401k', 'ira', 'brokerage'].includes(s)) return 'investment';
-  return 'net_worth';
+/** Build a dedup key from institution + account name */
+function dedupKey(institution: string, accountName: string): string {
+  return `${institution.toLowerCase()}:${accountName.toLowerCase()}`;
 }
 
-function defaultManualCategory(accountType: string): string {
-  if (['Credit Card', 'Loan', 'Mortgage'].includes(accountType)) return 'debt';
-  if (['Investment', 'Retirement'].includes(accountType)) return 'investment';
-  return 'net_worth';
-}
+/** Deduplicate accounts across institutions by institution+name (joint accounts) */
+function deduplicateInstitutions(institutions: InstitutionData[]): { deduped: InstitutionData[]; sharedKeys: Set<string> } {
+  const counts = new Map<string, number>();
+  const sharedKeys = new Set<string>();
 
-/** Deduplicate accounts across institutions by account_id (joint accounts) */
-function deduplicateInstitutions(institutions: InstitutionData[]): { deduped: InstitutionData[]; sharedIds: Set<string> } {
-  const seen = new Set<string>();
-  const sharedIds = new Set<string>();
-  // First pass: find shared account_ids
   for (const inst of institutions) {
     for (const a of inst.accounts) {
-      if (seen.has(a.account_id)) sharedIds.add(a.account_id);
-      seen.add(a.account_id);
+      const key = dedupKey(inst.institution, a.name);
+      counts.set(key, (counts.get(key) || 0) + 1);
     }
   }
-  // Second pass: deduplicate
+
+  for (const [key, count] of counts) {
+    if (count > 1) sharedKeys.add(key);
+  }
+
   const kept = new Set<string>();
   const deduped = institutions.map((inst) => ({
     ...inst,
     accounts: inst.accounts.filter((a) => {
-      if (kept.has(a.account_id)) return false;
-      kept.add(a.account_id);
+      const key = dedupKey(inst.institution, a.name);
+      if (kept.has(key)) return false;
+      kept.add(key);
       return true;
     }),
   })).filter((inst) => inst.accounts.length > 0);
-  return { deduped, sharedIds };
-}
 
-type Category = 'net_worth' | 'debt' | 'investment' | 'exclude';
+  return { deduped, sharedKeys };
+}
 
 function filterByCategory(institutions: InstitutionData[], cat: Category): InstitutionData[] {
   return institutions
@@ -89,11 +85,12 @@ function sumVisible(accounts: { current_balance?: number; balance?: number; is_h
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [institutions, setInstitutions] = useState<InstitutionData[]>([]);
   const [manualAccounts, setManualAccounts] = useState<ManualAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalAssets, setTotalAssets] = useState(0);
-  const [totalDebts, setTotalDebts] = useState(0);
+  const [debtCount, setDebtCount] = useState(0);
 
   const updateTotals = (insts: InstitutionData[], manual: ManualAccount[]) => {
     const { deduped } = deduplicateInstitutions(insts);
@@ -106,10 +103,10 @@ export default function Dashboard() {
     const manualDebt = manual.filter((a) => a.category === 'debt');
 
     const assets = sumVisible(nwAccounts) + sumVisible(invAccounts) + sumVisible(manualNW) + sumVisible(manualInv);
-    const debts = sumVisible(debtAccounts) + sumVisible(manualDebt);
+    const dCount = debtAccounts.filter((a) => !a.is_hidden).length + manualDebt.filter((a) => !a.is_hidden).length;
 
     setTotalAssets(assets);
-    setTotalDebts(debts);
+    setDebtCount(dCount);
   };
 
   const fetchBalances = async () => {
@@ -133,7 +130,7 @@ export default function Dashboard() {
       for (const inst of plaidInstitutions) {
         for (const acct of inst.accounts) {
           acct.is_hidden = hiddenIds.has(acct.account_id);
-          acct.category = catMap.get(`plaid:${acct.account_id}`) || defaultCategory(acct.type, acct.subtype);
+          acct.category = catMap.get(`plaid:${acct.account_id}`) || defaultPlaidCategory(acct.type, acct.subtype);
         }
       }
 
@@ -212,26 +209,30 @@ export default function Dashboard() {
     } catch { toast.error('Failed to remove account'); }
   };
 
-  const { deduped, sharedIds } = deduplicateInstitutions(institutions);
+  const { deduped, sharedKeys } = deduplicateInstitutions(institutions);
   const plaidNW = filterByCategory(deduped, 'net_worth');
-  const plaidDebt = filterByCategory(deduped, 'debt');
   const plaidInv = filterByCategory(deduped, 'investment');
 
   const manualNW = manualAccounts.filter((a) => a.category === 'net_worth');
-  const manualDebt = manualAccounts.filter((a) => a.category === 'debt');
   const manualInv = manualAccounts.filter((a) => a.category === 'investment');
 
   const groupManual = (list: ManualAccount[]) =>
     list.reduce<Record<string, ManualAccount[]>>((acc, a) => { (acc[a.institution_name] ||= []).push(a); return acc; }, {});
 
   const manualNWByInst = groupManual(manualNW);
-  const manualDebtByInst = groupManual(manualDebt);
   const manualInvByInst = groupManual(manualInv);
 
   const hasAnyAccounts = institutions.length > 0 || manualAccounts.length > 0;
 
-  const mapPlaid = (accounts: AccountData[]) =>
-    accounts.map((a) => ({ id: a.account_id, name: a.name, type: a.subtype || a.type, balance: a.current_balance, isHidden: a.is_hidden, isShared: sharedIds.has(a.account_id) }));
+  const mapPlaid = (inst: InstitutionData) => (accounts: AccountData[]) =>
+    accounts.map((a) => ({
+      id: a.account_id,
+      name: a.name,
+      type: a.subtype || a.type,
+      balance: a.current_balance,
+      isHidden: a.is_hidden,
+      isShared: sharedKeys.has(dedupKey(inst.institution, a.name)),
+    }));
 
   const mapManual = (accounts: ManualAccount[]) =>
     accounts.map((a) => ({ id: a.id, name: a.account_name, type: a.account_type, balance: Number(a.balance), isHidden: a.is_hidden }));
@@ -251,7 +252,7 @@ export default function Dashboard() {
         {!loading && (
           <div className="grid gap-4">
             {plaid.map((inst, i) => (
-              <BankAccountCard key={`${inst.institution}-${inst.connection_id}`} institution={inst.institution} accounts={mapPlaid(inst.accounts)}
+              <BankAccountCard key={`${inst.institution}-${inst.connection_id}`} institution={inst.institution} accounts={mapPlaid(inst)(inst.accounts)}
                 index={i} onToggleAccount={handleTogglePlaidAccount} onDeleteAccount={handleDeletePlaidAccount} />
             ))}
             {Object.entries(manualByInst).map(([instName, accounts], i) => (
@@ -272,7 +273,7 @@ export default function Dashboard() {
       <DashboardNav />
       <main className="max-w-3xl mx-auto px-4 md:px-6 py-6 md:py-10 space-y-6">
         {loading ? <Skeleton className="h-36 w-full rounded-xl" /> : (
-          <NetWorthCard totalAssets={totalAssets} totalDebts={totalDebts} />
+          <NetWorthCard totalAssets={totalAssets} />
         )}
 
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="flex items-center justify-end">
@@ -290,8 +291,19 @@ export default function Dashboard() {
           <div className="space-y-6">
             {renderSection('Net Worth', plaidNW, manualNWByInst, 0.3)}
             {renderSection('Investments', plaidInv, manualInvByInst, 0.4)}
-            {renderSection('Debts', plaidDebt, manualDebtByInst, 0.5)}
           </div>
+        )}
+
+        {!loading && debtCount > 0 && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}>
+            <button
+              onClick={() => navigate('/universe')}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+            >
+              <Sparkles className="w-4 h-4" />
+              The Universe Is Handling {debtCount} account{debtCount !== 1 ? 's' : ''}
+            </button>
+          </motion.div>
         )}
 
         {!loading && hasAnyAccounts && (

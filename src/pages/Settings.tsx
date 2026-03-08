@@ -9,13 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { motion } from 'framer-motion';
-
-const CATEGORIES = [
-  { value: 'net_worth', label: 'Net Worth' },
-  { value: 'debt', label: 'Debt' },
-  { value: 'investment', label: 'Investment' },
-  { value: 'exclude', label: 'Exclude' },
-];
+import { CATEGORY_OPTIONS, defaultPlaidCategory, defaultManualCategory } from '@/lib/categories';
 
 interface AccountRow {
   accountId: string;
@@ -33,24 +27,31 @@ export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchAll();
-  }, []);
+  useEffect(() => { fetchAll(); }, []);
 
   const fetchAll = async () => {
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      const [plaidRes, manualRes, catRes, profileRes] = await Promise.all([
-        supabase.functions.invoke('fetch-balances'),
+
+      const [balancesRes, connectionsRes, manualRes, catRes, profileRes] = await Promise.all([
+        supabase.from('account_balances' as any).select('*'),
+        supabase.from('bank_connections' as any).select('id, institution_name'),
         supabase.from('manual_accounts' as any).select('*'),
         supabase.from('account_categories' as any).select('*'),
         supabase.from('profiles').select('household_id').eq('user_id', user?.id).single(),
       ]);
 
-      const plaidInstitutions = plaidRes.data?.institutions || [];
+      const balances = (balancesRes.data || []) as any[];
+      const connections = (connectionsRes.data || []) as any[];
       const manualAccts = (manualRes.data || []) as any[];
       const categories = (catRes.data || []) as any[];
+
+      // Build connection id -> institution name map
+      const connMap = new Map<string, string>();
+      for (const c of connections) {
+        connMap.set(c.id, c.institution_name);
+      }
 
       const catMap = new Map<string, string>();
       for (const c of categories) {
@@ -59,19 +60,17 @@ export default function Settings() {
 
       const rows: AccountRow[] = [];
 
-      for (const inst of plaidInstitutions) {
-        for (const acct of inst.accounts) {
-          const key = `plaid:${acct.account_id}`;
-          rows.push({
-            accountId: acct.account_id,
-            source: 'plaid',
-            name: acct.name,
-            type: acct.subtype || acct.type,
-            institution: inst.institution,
-            balance: acct.current_balance,
-            category: catMap.get(key) || guessCategory(acct.type, acct.subtype),
-          });
-        }
+      for (const bal of balances) {
+        const key = `plaid:${bal.account_id}`;
+        rows.push({
+          accountId: bal.account_id,
+          source: 'plaid',
+          name: bal.name,
+          type: bal.subtype || bal.type,
+          institution: connMap.get(bal.bank_connection_id) || 'Unknown',
+          balance: Number(bal.current_balance),
+          category: catMap.get(key) || defaultPlaidCategory(bal.type, bal.subtype),
+        });
       }
 
       for (const acct of manualAccts) {
@@ -83,7 +82,7 @@ export default function Settings() {
           type: acct.account_type,
           institution: acct.institution_name,
           balance: Number(acct.balance),
-          category: catMap.get(key) || guessManualCategory(acct.account_type),
+          category: catMap.get(key) || defaultManualCategory(acct.account_type),
         });
       }
 
@@ -153,8 +152,9 @@ export default function Settings() {
         </div>
 
         <p className="text-sm text-muted-foreground">
-          Choose how each account is categorized. Accounts in <strong>Net Worth</strong> count toward your total.{' '}
-          <strong>Debt</strong> and <strong>Investment</strong> are tracked separately. <strong>Exclude</strong> hides an account entirely.
+          <strong>Net Worth</strong> and <strong>Investment</strong> accounts count toward your total.{' '}
+          <strong>The Universe Is Handling This</strong> accounts are tracked on their own page.{' '}
+          <strong>Exclude</strong> hides an account from everywhere.
         </p>
 
         {loading ? (
@@ -199,11 +199,11 @@ export default function Settings() {
                           onValueChange={(val) => handleCategoryChange(row.accountId, row.source, val)}
                           disabled={saving === row.accountId}
                         >
-                          <SelectTrigger className="w-[130px] h-8 text-xs">
+                          <SelectTrigger className="w-[200px] h-8 text-xs">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {CATEGORIES.map((cat) => (
+                            {CATEGORY_OPTIONS.map((cat) => (
                               <SelectItem key={cat.value} value={cat.value}>
                                 {cat.label}
                               </SelectItem>
@@ -221,18 +221,4 @@ export default function Settings() {
       </main>
     </div>
   );
-}
-
-function guessCategory(type: string, subtype?: string): string {
-  const t = type.toLowerCase();
-  const s = (subtype || '').toLowerCase();
-  if (t === 'credit' || t === 'loan' || s === 'credit card' || s === 'mortgage') return 'debt';
-  if (t === 'investment' || s === '401k' || s === 'ira' || s === 'brokerage') return 'investment';
-  return 'net_worth';
-}
-
-function guessManualCategory(accountType: string): string {
-  if (['Credit Card', 'Loan', 'Mortgage'].includes(accountType)) return 'debt';
-  if (['Investment', 'Retirement'].includes(accountType)) return 'investment';
-  return 'net_worth';
 }
