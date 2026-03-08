@@ -40,11 +40,12 @@ export default function Settings() {
   const fetchAll = async () => {
     setLoading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
       const [plaidRes, manualRes, catRes, profileRes] = await Promise.all([
         supabase.functions.invoke('fetch-balances'),
         supabase.from('manual_accounts' as any).select('*'),
         supabase.from('account_categories' as any).select('*'),
-        supabase.from('profiles').select('household_id').single(),
+        supabase.from('profiles').select('household_id').eq('user_id', user?.id).single(),
       ]);
 
       const plaidInstitutions = plaidRes.data?.institutions || [];
@@ -98,7 +99,8 @@ export default function Settings() {
   const handleCategoryChange = async (accountId: string, source: string, category: string) => {
     setSaving(accountId);
     try {
-      const { data: profile } = await supabase.from('profiles').select('household_id').single();
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: profile } = await supabase.from('profiles').select('household_id').eq('user_id', user?.id).single();
       if (!profile?.household_id) throw new Error('No household');
 
       const { error } = await (supabase.from('account_categories' as any) as any).upsert(
