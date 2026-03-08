@@ -295,6 +295,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      bank_connection_household_id: {
+        Args: { _connection_id: string }
+        Returns: string
+      }
       get_household_bank_connections: {
         Args: never
         Returns: {
