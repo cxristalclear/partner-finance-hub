@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { DashboardNav } from '@/components/dashboard/DashboardNav';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { InvitePartnerDialog } from '@/components/dashboard/InvitePartnerDialog';
 import { ArrowLeft, Landmark, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
