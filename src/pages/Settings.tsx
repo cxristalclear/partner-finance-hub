@@ -144,6 +144,11 @@ export default function Settings() {
           <h1 className="text-xl font-semibold">Account Settings</h1>
         </div>
 
+        <div className="glass-card p-5">
+          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Household</h3>
+          <InvitePartnerDialog />
+        </div>
+
         <p className="text-sm text-muted-foreground">
           Choose how each account is categorized. Accounts in <strong>Net Worth</strong> count toward your total.{' '}
           <strong>Debt</strong> and <strong>Investment</strong> are tracked separately. <strong>Exclude</strong> hides an account entirely.
