@@ -267,7 +267,6 @@ export default function Dashboard() {
 
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="flex items-center justify-end">
           <div className="flex items-center gap-2">
-            <InvitePartnerDialog />
             <AddManualAccountDialog onSuccess={fetchBalances} />
             <ConnectBankButton onSuccess={fetchBalances} />
           </div>
