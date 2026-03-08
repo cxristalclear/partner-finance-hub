@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Landmark, Wallet, Settings2 } from 'lucide-react';
+import { Landmark, Wallet, Settings2, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
