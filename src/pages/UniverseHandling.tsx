@@ -109,10 +109,10 @@ export default function UniverseHandling() {
         accounts: inst.accounts.filter((a) => a.category === 'debt'),
       })).filter((inst) => inst.accounts.length > 0);
 
-      const manual = ((manualRes.data || []) as any[]).map((a: any) => ({
+      const manual = (manualRes.data || []).map((a) => ({
         ...a,
         category: catMap.get(`manual:${a.id}`) || defaultManualCategory(a.account_type),
-      })).filter((a: any) => a.category === 'debt') as ManualAccount[];
+      })).filter((a) => a.category === 'debt') as ManualAccount[];
 
       setInstitutions(debtInstitutions);
       setManualAccounts(manual);
