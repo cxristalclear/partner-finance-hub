@@ -53,16 +53,27 @@ function defaultManualCategory(accountType: string): string {
 }
 
 /** Deduplicate accounts across institutions by account_id (joint accounts) */
-function deduplicateInstitutions(institutions: InstitutionData[]): InstitutionData[] {
+function deduplicateInstitutions(institutions: InstitutionData[]): { deduped: InstitutionData[]; sharedIds: Set<string> } {
   const seen = new Set<string>();
-  return institutions.map((inst) => ({
+  const sharedIds = new Set<string>();
+  // First pass: find shared account_ids
+  for (const inst of institutions) {
+    for (const a of inst.accounts) {
+      if (seen.has(a.account_id)) sharedIds.add(a.account_id);
+      seen.add(a.account_id);
+    }
+  }
+  // Second pass: deduplicate
+  const kept = new Set<string>();
+  const deduped = institutions.map((inst) => ({
     ...inst,
     accounts: inst.accounts.filter((a) => {
-      if (seen.has(a.account_id)) return false;
-      seen.add(a.account_id);
+      if (kept.has(a.account_id)) return false;
+      kept.add(a.account_id);
       return true;
     }),
   })).filter((inst) => inst.accounts.length > 0);
+  return { deduped, sharedIds };
 }
 
 type Category = 'net_worth' | 'debt' | 'investment' | 'exclude';
@@ -85,7 +96,7 @@ export default function Dashboard() {
   const [totalDebts, setTotalDebts] = useState(0);
 
   const updateTotals = (insts: InstitutionData[], manual: ManualAccount[]) => {
-    const deduped = deduplicateInstitutions(insts);
+    const { deduped } = deduplicateInstitutions(insts);
     const nwAccounts = deduped.flatMap((i) => i.accounts.filter((a) => a.category === 'net_worth'));
     const invAccounts = deduped.flatMap((i) => i.accounts.filter((a) => a.category === 'investment'));
     const debtAccounts = deduped.flatMap((i) => i.accounts.filter((a) => a.category === 'debt'));
@@ -201,7 +212,7 @@ export default function Dashboard() {
     } catch { toast.error('Failed to remove account'); }
   };
 
-  const deduped = deduplicateInstitutions(institutions);
+  const { deduped, sharedIds } = deduplicateInstitutions(institutions);
   const plaidNW = filterByCategory(deduped, 'net_worth');
   const plaidDebt = filterByCategory(deduped, 'debt');
   const plaidInv = filterByCategory(deduped, 'investment');
@@ -220,7 +231,7 @@ export default function Dashboard() {
   const hasAnyAccounts = institutions.length > 0 || manualAccounts.length > 0;
 
   const mapPlaid = (accounts: AccountData[]) =>
-    accounts.map((a) => ({ id: a.account_id, name: a.name, type: a.subtype || a.type, balance: a.current_balance, isHidden: a.is_hidden }));
+    accounts.map((a) => ({ id: a.account_id, name: a.name, type: a.subtype || a.type, balance: a.current_balance, isHidden: a.is_hidden, isShared: sharedIds.has(a.account_id) }));
 
   const mapManual = (accounts: ManualAccount[]) =>
     accounts.map((a) => ({ id: a.id, name: a.account_name, type: a.account_type, balance: Number(a.balance), isHidden: a.is_hidden }));

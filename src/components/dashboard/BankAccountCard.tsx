@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { Landmark, Wallet, Settings2, Trash2 } from 'lucide-react';
+import { Landmark, Wallet, Settings2, Trash2, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface Account {
   id?: string;
@@ -10,6 +12,7 @@ interface Account {
   type: string;
   balance: number;
   isHidden?: boolean;
+  isShared?: boolean;
 }
 
 interface BankAccountCardProps {
@@ -85,6 +88,21 @@ export function BankAccountCard({ institution, accounts, index, onToggleAccount,
                 <Wallet className="w-3.5 h-3.5" />
               )}
               <span className={account.isHidden ? 'line-through opacity-50' : ''}>{account.name}</span>
+              {account.isShared && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 gap-0.5 cursor-default">
+                        <Users className="w-2.5 h-2.5" />
+                        Joint
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>This account is shared between partners</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
               <span className="text-xs px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground">
                 {account.type}
               </span>
