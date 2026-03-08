@@ -35,17 +35,17 @@ export default function Settings() {
       const { data: { user } } = await supabase.auth.getUser();
 
       const [balancesRes, connectionsRes, manualRes, catRes, profileRes] = await Promise.all([
-        supabase.from('account_balances' as any).select('*'),
-        supabase.from('bank_connections' as any).select('id, institution_name'),
-        supabase.from('manual_accounts' as any).select('*'),
-        supabase.from('account_categories' as any).select('*'),
+        supabase.from('account_balances').select('*'),
+        supabase.rpc('get_household_bank_connections'),
+        supabase.from('manual_accounts').select('*'),
+        supabase.from('account_categories').select('*'),
         supabase.from('profiles').select('household_id').eq('user_id', user?.id).single(),
       ]);
 
-      const balances = (balancesRes.data || []) as any[];
-      const connections = (connectionsRes.data || []) as any[];
-      const manualAccts = (manualRes.data || []) as any[];
-      const categories = (catRes.data || []) as any[];
+      const balances = balancesRes.data || [];
+      const connections = (connectionsRes.data || []) as { id: string; institution_name: string }[];
+      const manualAccts = manualRes.data || [];
+      const categories = catRes.data || [];
 
       // Build connection id -> institution name map
       const connMap = new Map<string, string>();
