@@ -181,7 +181,7 @@ export default function Dashboard() {
 
   const handleDeletePlaidAccount = async (accountId: string) => {
     try {
-      const { error } = await (supabase.from('account_balances' as any) as any)
+      const { error } = await supabase.from('account_balances')
         .delete().eq('account_id', accountId);
       if (error) throw error;
       setInstitutions((prev) => {
