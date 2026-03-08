@@ -102,7 +102,7 @@ export default function Settings() {
       const { data: profile } = await supabase.from('profiles').select('household_id').eq('user_id', user?.id).single();
       if (!profile?.household_id) throw new Error('No household');
 
-      const { error } = await (supabase.from('account_categories' as any) as any).upsert(
+      const { error } = await supabase.from('account_categories').upsert(
         {
           household_id: profile.household_id,
           account_id: accountId,
