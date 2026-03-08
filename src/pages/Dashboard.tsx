@@ -114,9 +114,9 @@ export default function Dashboard() {
     try {
       const [plaidRes, manualRes, hiddenRes, catRes] = await Promise.all([
         supabase.functions.invoke('fetch-balances'),
-        supabase.from('manual_accounts' as any).select('*'),
-        supabase.from('account_balances' as any).select('account_id, is_hidden').eq('is_hidden', true),
-        supabase.from('account_categories' as any).select('*'),
+        supabase.from('manual_accounts').select('*'),
+        supabase.from('account_balances').select('account_id, is_hidden').eq('is_hidden', true),
+        supabase.from('account_categories').select('*'),
       ]);
 
       const plaidInstitutions: InstitutionData[] = plaidRes.data?.institutions || [];
