@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { Landmark, Wallet, Settings2, Trash2 } from 'lucide-react';
+import { Landmark, Wallet, Settings2, Trash2, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface Account {
   id?: string;
@@ -10,6 +12,7 @@ interface Account {
   type: string;
   balance: number;
   isHidden?: boolean;
+  isShared?: boolean;
 }
 
 interface BankAccountCardProps {

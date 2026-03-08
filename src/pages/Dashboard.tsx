@@ -53,16 +53,27 @@ function defaultManualCategory(accountType: string): string {
 }
 
 /** Deduplicate accounts across institutions by account_id (joint accounts) */
-function deduplicateInstitutions(institutions: InstitutionData[]): InstitutionData[] {
+function deduplicateInstitutions(institutions: InstitutionData[]): { deduped: InstitutionData[]; sharedIds: Set<string> } {
   const seen = new Set<string>();
-  return institutions.map((inst) => ({
+  const sharedIds = new Set<string>();
+  // First pass: find shared account_ids
+  for (const inst of institutions) {
+    for (const a of inst.accounts) {
+      if (seen.has(a.account_id)) sharedIds.add(a.account_id);
+      seen.add(a.account_id);
+    }
+  }
+  // Second pass: deduplicate
+  const kept = new Set<string>();
+  const deduped = institutions.map((inst) => ({
     ...inst,
     accounts: inst.accounts.filter((a) => {
-      if (seen.has(a.account_id)) return false;
-      seen.add(a.account_id);
+      if (kept.has(a.account_id)) return false;
+      kept.add(a.account_id);
       return true;
     }),
   })).filter((inst) => inst.accounts.length > 0);
+  return { deduped, sharedIds };
 }
 
 type Category = 'net_worth' | 'debt' | 'investment' | 'exclude';
