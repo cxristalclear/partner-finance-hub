@@ -295,6 +295,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_household_bank_connections: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          institution_id: string
+          institution_name: string
+          status: string
+          user_id: string
+        }[]
+      }
       user_household_id: { Args: { _user_id: string }; Returns: string }
     }
     Enums: {
