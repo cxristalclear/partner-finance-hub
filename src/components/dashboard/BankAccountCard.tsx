@@ -17,6 +17,7 @@ interface BankAccountCardProps {
   accounts: Account[];
   index: number;
   onToggleAccount?: (accountId: string, hidden: boolean) => void;
+  onDeleteAccount?: (accountId: string) => void;
 }
 
 export function BankAccountCard({ institution, accounts, index, onToggleAccount }: BankAccountCardProps) {
