@@ -96,7 +96,7 @@ export default function Dashboard() {
   const [totalDebts, setTotalDebts] = useState(0);
 
   const updateTotals = (insts: InstitutionData[], manual: ManualAccount[]) => {
-    const deduped = deduplicateInstitutions(insts);
+    const { deduped } = deduplicateInstitutions(insts);
     const nwAccounts = deduped.flatMap((i) => i.accounts.filter((a) => a.category === 'net_worth'));
     const invAccounts = deduped.flatMap((i) => i.accounts.filter((a) => a.category === 'investment'));
     const debtAccounts = deduped.flatMap((i) => i.accounts.filter((a) => a.category === 'debt'));
