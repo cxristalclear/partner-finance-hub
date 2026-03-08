@@ -120,8 +120,8 @@ export default function Dashboard() {
       ]);
 
       const plaidInstitutions: InstitutionData[] = plaidRes.data?.institutions || [];
-      const hiddenIds = new Set(((hiddenRes.data || []) as any[]).map((r: any) => r.account_id));
-      const catData = (catRes.data || []) as any[];
+      const hiddenIds = new Set((hiddenRes.data || []).map((r) => r.account_id));
+      const catData = catRes.data || [];
       const catMap = new Map<string, string>();
       for (const c of catData) {
         catMap.set(`${c.account_source}:${c.account_id}`, c.category);
