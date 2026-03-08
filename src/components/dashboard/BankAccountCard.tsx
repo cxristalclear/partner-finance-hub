@@ -20,7 +20,7 @@ interface BankAccountCardProps {
   onDeleteAccount?: (accountId: string) => void;
 }
 
-export function BankAccountCard({ institution, accounts, index, onToggleAccount }: BankAccountCardProps) {
+export function BankAccountCard({ institution, accounts, index, onToggleAccount, onDeleteAccount }: BankAccountCardProps) {
   const [editing, setEditing] = useState(false);
 
   const visibleAccounts = editing ? accounts : accounts.filter((a) => !a.isHidden);
