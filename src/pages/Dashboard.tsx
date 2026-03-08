@@ -212,7 +212,7 @@ export default function Dashboard() {
     } catch { toast.error('Failed to remove account'); }
   };
 
-  const deduped = deduplicateInstitutions(institutions);
+  const { deduped, sharedIds } = deduplicateInstitutions(institutions);
   const plaidNW = filterByCategory(deduped, 'net_worth');
   const plaidDebt = filterByCategory(deduped, 'debt');
   const plaidInv = filterByCategory(deduped, 'investment');
@@ -231,7 +231,7 @@ export default function Dashboard() {
   const hasAnyAccounts = institutions.length > 0 || manualAccounts.length > 0;
 
   const mapPlaid = (accounts: AccountData[]) =>
-    accounts.map((a) => ({ id: a.account_id, name: a.name, type: a.subtype || a.type, balance: a.current_balance, isHidden: a.is_hidden }));
+    accounts.map((a) => ({ id: a.account_id, name: a.name, type: a.subtype || a.type, balance: a.current_balance, isHidden: a.is_hidden, isShared: sharedIds.has(a.account_id) }));
 
   const mapManual = (accounts: ManualAccount[]) =>
     accounts.map((a) => ({ id: a.id, name: a.account_name, type: a.account_type, balance: Number(a.balance), isHidden: a.is_hidden }));
