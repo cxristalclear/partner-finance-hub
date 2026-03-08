@@ -81,12 +81,24 @@ serve(async (req) => {
 
     if (!connections || connections.length === 0) {
       return new Response(
-        JSON.stringify({ institutions: [], total_balance: 0 }),
+        JSON.stringify({ institutions: [] }),
         {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
+    }
+
+    // Pre-fetch existing is_hidden values for all connections
+    const connectionIds = connections.map((c: any) => c.id);
+    const { data: existingBalances } = await serviceSupabase
+      .from("account_balances")
+      .select("bank_connection_id, account_id, is_hidden")
+      .in("bank_connection_id", connectionIds);
+
+    const hiddenMap = new Map<string, boolean>();
+    for (const row of existingBalances || []) {
+      hiddenMap.set(`${row.bank_connection_id}:${row.account_id}`, row.is_hidden);
     }
 
     const institutions = [];
@@ -120,8 +132,9 @@ serve(async (req) => {
           accounts,
         });
 
-        // Update cached balances
+        // Update cached balances, preserving is_hidden
         for (const acct of accounts) {
+          const hiddenKey = `${conn.id}:${acct.account_id}`;
           await serviceSupabase.from("account_balances").upsert(
             {
               bank_connection_id: conn.id,
@@ -131,6 +144,7 @@ serve(async (req) => {
               subtype: acct.subtype,
               current_balance: acct.current_balance,
               available_balance: acct.available_balance,
+              is_hidden: hiddenMap.get(hiddenKey) ?? false,
               last_synced_at: new Date().toISOString(),
             },
             { onConflict: "bank_connection_id,account_id" }
@@ -139,14 +153,8 @@ serve(async (req) => {
       }
     }
 
-    const total_balance = institutions.reduce(
-      (sum, inst) =>
-        sum + inst.accounts.reduce((s: number, a: any) => s + a.current_balance, 0),
-      0
-    );
-
     return new Response(
-      JSON.stringify({ institutions, total_balance }),
+      JSON.stringify({ institutions }),
       {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

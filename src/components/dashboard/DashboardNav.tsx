@@ -1,7 +1,8 @@
-import { Landmark, LogOut, Settings } from 'lucide-react';
+import { Landmark, LogOut, Settings, Sparkles } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export function DashboardNav() {
   const { user, signOut } = useAuth();
@@ -20,6 +21,14 @@ export function DashboardNav() {
         <span className="text-xs text-muted-foreground hidden sm:block">
           {user?.email}
         </span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" onClick={() => navigate('/universe')} className="text-muted-foreground hover:text-foreground">
+              <Sparkles className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>The Universe Is Handling This</TooltipContent>
+        </Tooltip>
         <Button variant="ghost" size="icon" onClick={() => navigate('/settings')} className="text-muted-foreground hover:text-foreground">
           <Settings className="w-4 h-4" />
         </Button>
