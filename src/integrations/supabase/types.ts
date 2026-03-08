@@ -64,6 +64,44 @@ export type Database = {
           },
         ]
       }
+      account_categories: {
+        Row: {
+          account_id: string
+          account_source: string
+          category: string
+          created_at: string
+          household_id: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          account_source?: string
+          category?: string
+          created_at?: string
+          household_id: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          account_source?: string
+          category?: string
+          created_at?: string
+          household_id?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_categories_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bank_connections: {
         Row: {
           access_token: string
