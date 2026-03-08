@@ -62,6 +62,13 @@ export type Database = {
             referencedRelation: "bank_connections"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "account_balances_bank_connection_id_fkey"
+            columns: ["bank_connection_id"]
+            isOneToOne: false
+            referencedRelation: "bank_connections_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       account_categories: {
@@ -292,7 +299,50 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      bank_connections_safe: {
+        Row: {
+          created_at: string | null
+          household_id: string | null
+          id: string | null
+          institution_id: string | null
+          institution_name: string | null
+          item_id: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          household_id?: string | null
+          id?: string | null
+          institution_id?: string | null
+          institution_name?: string | null
+          item_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          household_id?: string | null
+          id?: string | null
+          institution_id?: string | null
+          institution_name?: string | null
+          item_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_connections_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       user_household_id: { Args: { _user_id: string }; Returns: string }
