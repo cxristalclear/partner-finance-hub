@@ -134,7 +134,7 @@ export default function Dashboard() {
         }
       }
 
-      const manual = ((manualRes.data || []) as any[]).map((a: any) => ({
+      const manual = (manualRes.data || []).map((a) => ({
         ...a,
         category: catMap.get(`manual:${a.id}`) || defaultManualCategory(a.account_type),
       })) as ManualAccount[];
