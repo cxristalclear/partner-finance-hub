@@ -114,14 +114,14 @@ export default function Dashboard() {
     try {
       const [plaidRes, manualRes, hiddenRes, catRes] = await Promise.all([
         supabase.functions.invoke('fetch-balances'),
-        supabase.from('manual_accounts' as any).select('*'),
-        supabase.from('account_balances' as any).select('account_id, is_hidden').eq('is_hidden', true),
-        supabase.from('account_categories' as any).select('*'),
+        supabase.from('manual_accounts').select('*'),
+        supabase.from('account_balances').select('account_id, is_hidden').eq('is_hidden', true),
+        supabase.from('account_categories').select('*'),
       ]);
 
       const plaidInstitutions: InstitutionData[] = plaidRes.data?.institutions || [];
-      const hiddenIds = new Set(((hiddenRes.data || []) as any[]).map((r: any) => r.account_id));
-      const catData = (catRes.data || []) as any[];
+      const hiddenIds = new Set((hiddenRes.data || []).map((r) => r.account_id));
+      const catData = catRes.data || [];
       const catMap = new Map<string, string>();
       for (const c of catData) {
         catMap.set(`${c.account_source}:${c.account_id}`, c.category);
@@ -134,7 +134,7 @@ export default function Dashboard() {
         }
       }
 
-      const manual = ((manualRes.data || []) as any[]).map((a: any) => ({
+      const manual = (manualRes.data || []).map((a) => ({
         ...a,
         category: catMap.get(`manual:${a.id}`) || defaultManualCategory(a.account_type),
       })) as ManualAccount[];
@@ -153,7 +153,7 @@ export default function Dashboard() {
 
   const handleTogglePlaidAccount = async (accountId: string, hidden: boolean) => {
     try {
-      const { error } = await (supabase.from('account_balances' as any) as any)
+      const { error } = await supabase.from('account_balances')
         .update({ is_hidden: hidden }).eq('account_id', accountId);
       if (error) throw error;
       setInstitutions((prev) => {
@@ -168,7 +168,7 @@ export default function Dashboard() {
 
   const handleToggleManualAccount = async (accountId: string, hidden: boolean) => {
     try {
-      const { error } = await (supabase.from('manual_accounts' as any) as any)
+      const { error } = await supabase.from('manual_accounts')
         .update({ is_hidden: hidden }).eq('id', accountId);
       if (error) throw error;
       setManualAccounts((prev) => {
@@ -181,7 +181,7 @@ export default function Dashboard() {
 
   const handleDeletePlaidAccount = async (accountId: string) => {
     try {
-      const { error } = await (supabase.from('account_balances' as any) as any)
+      const { error } = await supabase.from('account_balances')
         .delete().eq('account_id', accountId);
       if (error) throw error;
       setInstitutions((prev) => {
@@ -197,7 +197,7 @@ export default function Dashboard() {
 
   const handleDeleteManualAccount = async (accountId: string) => {
     try {
-      const { error } = await (supabase.from('manual_accounts' as any) as any)
+      const { error } = await supabase.from('manual_accounts')
         .delete().eq('id', accountId);
       if (error) throw error;
       setManualAccounts((prev) => {
