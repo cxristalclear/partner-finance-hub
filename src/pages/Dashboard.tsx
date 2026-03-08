@@ -3,7 +3,7 @@ import { DashboardNav } from '@/components/dashboard/DashboardNav';
 import { NetWorthCard } from '@/components/dashboard/NetWorthCard';
 import { BankAccountCard } from '@/components/dashboard/BankAccountCard';
 import { ConnectBankButton } from '@/components/dashboard/ConnectBankButton';
-import { InvitePartnerDialog } from '@/components/dashboard/InvitePartnerDialog';
+import { AddManualAccountDialog } from '@/components/dashboard/AddManualAccountDialog';
 import { AddManualAccountDialog } from '@/components/dashboard/AddManualAccountDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { motion } from 'framer-motion';
