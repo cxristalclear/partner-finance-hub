@@ -240,7 +240,7 @@ export default function Dashboard() {
         {!loading && (
           <div className="grid gap-4">
             {plaid.map((inst, i) => (
-              <BankAccountCard key={inst.institution} institution={inst.institution} accounts={mapPlaid(inst.accounts)}
+              <BankAccountCard key={`${inst.institution}-${inst.connection_id}`} institution={inst.institution} accounts={mapPlaid(inst.accounts)}
                 index={i} onToggleAccount={handleTogglePlaidAccount} onDeleteAccount={handleDeletePlaidAccount} />
             ))}
             {Object.entries(manualByInst).map(([instName, accounts], i) => (
