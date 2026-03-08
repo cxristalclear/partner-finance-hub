@@ -127,7 +127,7 @@ export default function UniverseHandling() {
 
   const handleTogglePlaidAccount = async (accountId: string, hidden: boolean) => {
     try {
-      const { error } = await (supabase.from('account_balances' as any) as any)
+      const { error } = await supabase.from('account_balances')
         .update({ is_hidden: hidden }).eq('account_id', accountId);
       if (error) throw error;
       setInstitutions((prev) =>
