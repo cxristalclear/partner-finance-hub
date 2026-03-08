@@ -40,11 +40,12 @@ export default function Settings() {
   const fetchAll = async () => {
     setLoading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
       const [plaidRes, manualRes, catRes, profileRes] = await Promise.all([
         supabase.functions.invoke('fetch-balances'),
         supabase.from('manual_accounts' as any).select('*'),
         supabase.from('account_categories' as any).select('*'),
-        supabase.from('profiles').select('household_id').eq('user_id', (await supabase.auth.getUser()).data.user?.id).single(),
+        supabase.from('profiles').select('household_id').eq('user_id', user?.id).single(),
       ]);
 
       const plaidInstitutions = plaidRes.data?.institutions || [];
